@@ -94,7 +94,12 @@ test('propuestas de sitio y fecha con votos', async () => {
   const created = await call('/proposals', {
     method: 'POST',
     token: people.lucia.token,
-    body: { kind: 'place', title: 'Arrocería del puerto', details: 'https://example.com/menu\n35 € por persona' },
+    body: {
+      kind: 'place',
+      title: 'Arrocería del puerto',
+      address: 'Muelle 3, Valencia',
+      details: 'https://example.com/menu\n35 € por persona',
+    },
   });
   assert.equal(created.status, 201);
   const placeId = created.data.id;
@@ -127,6 +132,7 @@ test('propuestas de sitio y fecha con votos', async () => {
   assert.equal(list.totalPeople, 3);
   assert.equal(list.places[0].votes, 2, 'el autor vota su propuesta automáticamente');
   assert.equal(list.places[0].votedByMe, true);
+  assert.equal(list.places[0].address, 'Muelle 3, Valencia');
   assert.equal(list.places[0].canDelete, true, 'el organizador puede borrar cualquier propuesta');
   assert.equal(list.dates[0].startsAt, `${nextYear}-12-18T21:00`);
 
@@ -253,4 +259,40 @@ test('borrar a alguien del sorteo lo anula para repetirlo', async () => {
   const redo = await call('/admin/draw', { method: 'POST', token: people.ricardo.token, body: { redo: true } });
   assert.equal(redo.status, 201);
   assert.equal(redo.data.participantCount, 4);
+});
+
+test('encuesta de presupuesto mínimo y máximo', async () => {
+  const empty = await call('/budget', { token: people.ricardo.token });
+  assert.equal(empty.status, 200);
+  assert.equal(empty.data.myVote, null);
+  assert.equal(empty.data.suggested, null);
+
+  const bad = await call('/budget', {
+    method: 'PUT',
+    token: people.ricardo.token,
+    body: { minAmount: 30, maxAmount: 10 },
+  });
+  assert.equal(bad.status, 400);
+
+  assert.equal(
+    (await call('/budget', { method: 'PUT', token: people.ricardo.token, body: { minAmount: 10, maxAmount: 25 } }))
+      .status,
+    204,
+  );
+  assert.equal(
+    (await call('/budget', { method: 'PUT', token: people.lucia.token, body: { minAmount: 15, maxAmount: 30 } })).status,
+    204,
+  );
+  assert.equal(
+    (await call('/budget', { method: 'PUT', token: people.marta.token, body: { minAmount: 20, maxAmount: 40 } })).status,
+    204,
+  );
+
+  const survey = (await call('/budget', { token: people.ricardo.token })).data;
+  assert.equal(survey.votes.length, 3);
+  assert.deepEqual(survey.myVote, { minAmount: 10, maxAmount: 25 });
+  assert.deepEqual(survey.suggested, { minAmount: 15, maxAmount: 30 });
+
+  assert.equal((await call('/budget', { method: 'DELETE', token: people.marta.token })).status, 204);
+  assert.equal((await call('/budget', { token: people.marta.token })).data.votes.length, 2);
 });

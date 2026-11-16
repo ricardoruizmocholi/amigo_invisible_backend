@@ -59,10 +59,12 @@ export function proposalsRouter({ db, config }) {
 
     const details = optionalNotes(body.details, { max: 300, label: 'Los detalles' });
     let title = null;
+    let address = null;
     let startsAt = null;
     let dedupeKey;
     if (kind === 'place') {
       title = requireText(body.title, { min: 2, max: 80, message: 'Escribe el nombre del sitio (entre 2 y 80 caracteres).' });
+      address = optionalNotes(body.address, { max: 120, label: 'La dirección' });
       dedupeKey = normalizeKey(title);
     } else {
       startsAt = requireDateTime(body.startsAt, todayIn(config.timeZone));
@@ -84,8 +86,10 @@ export function proposalsRouter({ db, config }) {
 
     const id = transaction(db, () => {
       const { lastInsertRowid } = db
-        .prepare('INSERT INTO proposals (kind, title, starts_at, details, dedupe_key, author_id) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(kind, title, startsAt, details, dedupeKey, req.user.id);
+        .prepare(
+          'INSERT INTO proposals (kind, title, address, starts_at, details, dedupe_key, author_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        )
+        .run(kind, title, address, startsAt, details, dedupeKey, req.user.id);
       db.prepare('INSERT INTO votes (proposal_id, user_id) VALUES (?, ?)').run(lastInsertRowid, req.user.id);
       return Number(lastInsertRowid);
     });
@@ -137,6 +141,7 @@ function serializeProposal(row, voters, user) {
     id: row.id,
     kind: row.kind,
     title: row.title,
+    address: row.address ?? null,
     startsAt: row.starts_at,
     details: row.details,
     chosen: Boolean(row.chosen),

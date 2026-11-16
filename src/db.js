@@ -55,6 +55,17 @@ const MIGRATIONS = [
     value TEXT NOT NULL
   );
   `,
+  `
+  ALTER TABLE proposals ADD COLUMN address TEXT;
+
+  CREATE TABLE budget_votes (
+    user_id INTEGER PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+    min_amount INTEGER NOT NULL,
+    max_amount INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    CHECK (min_amount >= 1 AND max_amount >= min_amount AND max_amount <= 500)
+  );
+  `,
 ];
 
 export function openDatabase(filename) {

@@ -4,6 +4,7 @@ import { authenticate, requireAdmin, requireReadyUser } from './auth.js';
 import { errorHandler, HttpError } from './errors.js';
 import { adminRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
+import { budgetRouter } from './routes/budget.js';
 import { meRouter } from './routes/me.js';
 import { proposalsRouter } from './routes/proposals.js';
 import { secretSantaRouter } from './routes/secretSanta.js';
@@ -22,6 +23,7 @@ export function createApp({ db, config }) {
   app.use('/api/auth', authRouter({ db, config }));
   app.use('/api/me', meRouter({ db, config }));
   app.use('/api/proposals', requireReadyUser, proposalsRouter({ db, config }));
+  app.use('/api/budget', requireReadyUser, budgetRouter({ db }));
   app.use('/api/secret-santa', requireReadyUser, secretSantaRouter({ db }));
   app.use('/api/admin', requireReadyUser, requireAdmin, adminRouter({ db, config }));
 
