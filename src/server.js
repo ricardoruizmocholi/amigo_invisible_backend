@@ -6,7 +6,7 @@ const config = loadConfig();
 const db = openDatabase(config.databasePath);
 const app = createApp({ db, config });
 
-app.listen(config.port, (error) => {
+app.listen(config.port, '0.0.0.0', (error) => {
   if (error) throw error;
-  console.log(`API del amigo invisible escuchando en http://localhost:${config.port}`);
+  console.log(`API del amigo invisible escuchando en http://0.0.0.0:${config.port}`);
 });
